@@ -5,6 +5,12 @@ import scala.util.Try
 
 object Day01 {
 
+  private lazy val numbers =
+    Source
+      .fromResource("Day01-1.txt").getLines()
+      .flatMap(parseNumber)
+      .toList
+
   def parseNumber(string: String): Option[BigInt] =
     Try(BigInt(string)).toOption
 
@@ -14,12 +20,21 @@ object Day01 {
       numbers.lazyZip(numbers.tail)
         .count(_ < _)
 
-  @main
-  def go: Unit =
-    val numbers = Source.fromResource("Day01-1.txt").getLines()
-      .flatMap(parseNumber)
-    val increases = countIncreases(numbers.toList)
+  def logIncreases(numbers: List[BigInt]): Unit =
+    val increases = countIncreases(numbers)
     pprint.log(increases)
 
+  @main
+  def go: Unit =
+    logIncreases(numbers)
 
+  @main
+  def go2: Unit =
+    val triples = numbers
+      .lazyZip(numbers.tail)
+      .lazyZip(numbers.drop(2))
+      .map {
+        case (n1, n2, n3) => n1 + n2 + n3
+      }
+    logIncreases(triples)
 }
