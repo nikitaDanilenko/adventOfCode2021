@@ -8,6 +8,9 @@ lazy val root = project
     scalaVersion := scala3Version,
     libraryDependencies ++=
       Seq(
-        "com.lihaoyi" %% "pprint" % "0.6.6"
+        "com.lihaoyi"   %% "pprint"         % "0.6.6",
+        "org.typelevel" %% "spire"          % "0.18.0-M2",
+        "dev.optics"    %% "monocle-unsafe" % "3.1.0",
+        "org.typelevel" %% "cats-parse"     % "0.3.6"
       )
   )
