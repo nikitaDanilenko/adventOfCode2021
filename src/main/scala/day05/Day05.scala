@@ -3,6 +3,7 @@ package day05
 import cats.parse.Parser
 import cats.parse.Rfc5234.digit
 import spire.math.Natural
+import monocle.syntax.all._
 
 import scala.io.Source
 
@@ -58,8 +59,29 @@ def markPositions(area: Area, positions: Seq[Position]): Area =
     a.updatedWith(pos)(n => Some(n.getOrElse(Natural.zero) + Natural.one))
   }
 
+def diagonalUpPositions(line: Line): Seq[Position] =
+  if line.from.x + line.from.y == line.to.x + line.to.y
+    then
+      val (first, second) = if line.from.x <= line.to.x then (line.from, line.to) else (line.to, line.from)
+      0.to(second.x - first.x).map(i => first.focus(_.x).modify(_ + i).focus(_.y).modify(_ - i))
+  else Seq.empty
+
+def diagonalDownPositions(line: Line): Seq[Position] =
+  if line.from.y - line.from.x == line.to.y - line.to.x
+    then
+      val (first, second) = if line.from.x <= line.to.x then (line.from, line.to) else (line.to, line.from)
+      0.to(second.x - first.x).map(i => first.focus(_.x).modify(_ + i).focus(_.y).modify(_ + i))
+  else
+    Seq.empty
+
 @main
 def solution1: Unit =
   val allPositions = input.flatMap(l => horizontalPositions(l) ++ verticalPositions(l))
+  val markedArea = markPositions(Map.empty, allPositions)
+  pprint.log(markedArea.count(_._2 > Natural.one))
+
+@main
+def solution2: Unit =
+  val allPositions = input.flatMap(l => horizontalPositions(l) ++ verticalPositions(l) ++ diagonalUpPositions(l) ++ diagonalDownPositions(l))
   val markedArea = markPositions(Map.empty, allPositions)
   pprint.log(markedArea.count(_._2 > Natural.one))
