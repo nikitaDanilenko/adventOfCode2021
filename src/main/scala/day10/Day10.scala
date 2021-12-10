@@ -19,14 +19,14 @@ object Day10 {
 
   object Result {
     case object Ok extends Result
-    case object Incomplete extends Result
+    case class Incomplete(stack: List[Brace]) extends Result
     case class Error(brace: Brace) extends Result
   }
 
   def descend(chunk: Chunk): Result =
     def go(stack: List[Brace], chunk: Chunk): Result =
       if stack.nonEmpty && chunk.isEmpty
-        then Result.Incomplete
+        then Result.Incomplete(stack)
       else if stack.isEmpty && chunk.isEmpty
         then Result.Ok
       else
@@ -60,4 +60,25 @@ object Day10 {
       }.sum
     pprint.log(result)
 
+  def complete(stack: List[Brace]): List[Brace] =
+    stack.map(_.copy(direction = Direction.Close))
+
+  val completionPoints: Map[Brace, BigInt] = Map(
+    Brace(Symbol.Parenthesis, Direction.Close) -> BigInt(1),
+    Brace(Symbol.Square, Direction.Close) -> BigInt(2),
+    Brace(Symbol.Curly, Direction.Close) -> BigInt(3),
+    Brace(Symbol.Angle, Direction.Close) -> BigInt(4),
+  )
+
+  @main
+  def solution2: Unit =
+    val resultList =
+      input.map(descend).collect {
+        case Result.Incomplete(stack) =>
+          // The complete step is technically redundant, because it only changes the directions
+          complete(stack).foldLeft(BigInt(0)) { (c, brace) =>
+            BigInt(5) * c + completionPoints.getOrElse(brace, BigInt(0))
+          }
+      }.sorted
+    pprint.log(resultList(resultList.length / 2))
 }
