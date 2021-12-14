@@ -49,10 +49,7 @@ object Day12 {
   @main
   def solution2: Unit =
     val all = input.edges
-      .collect { case e if
-        (Set(e.from, e.to) & Set("start", "end")).isEmpty &&
-          e.from.forall(_.isLower)
-        =>
+      .collect { case e if (Set(e.from, e.to) & Set("start", "end")).isEmpty && e.from.forall(_.isLower) =>
         Vector(e, Edge.flip(e))
       }
       .flatten
