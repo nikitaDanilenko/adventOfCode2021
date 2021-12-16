@@ -38,5 +38,5 @@ object Day15 {
   def solution1: Unit =
     val target = (100, 100)
     val result = WeightedGraph.dijkstra(input)((1, 1), target)
-    pprint.log(result._1(target))
+    pprint.log(result(target))
 }

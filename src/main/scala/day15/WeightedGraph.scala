@@ -38,7 +38,7 @@ object WeightedGraph {
 
     @tailrec
     def processNext(
-      queue: Vector[A],
+      queue: Set[A],
       distances: Map[A, Tropical[Int]],
       predecessors: Map[A, A]
     ): (Map[A, Tropical[Int]], Map[A, A]) =
@@ -51,8 +51,8 @@ object WeightedGraph {
           (distances, predecessors)
 
         else
-          val remainingQueue = queue.filter(_ != smallestVertex)
-          val neighbours = successorsOf(weightedGraph)(smallestVertex).intersect(remainingQueue.toSet)
+          val remainingQueue = queue - smallestVertex
+          val neighbours = successorsOf(weightedGraph)(smallestVertex).intersect(remainingQueue)
           val (updatedDistances, updatedPredecessors) =
             neighbours.foldLeft((distances, predecessors)) {
               case ((ds, ps), n) =>
@@ -64,7 +64,7 @@ object WeightedGraph {
             }
           processNext(remainingQueue, updatedDistances, updatedPredecessors)
 
-    val vertices = verticesOf(weightedGraph).toVector
+    val vertices = verticesOf(weightedGraph)
 
     val iterated = processNext(
       vertices,
