@@ -7,18 +7,21 @@ object Day09 {
   type Position = (Int, Int)
   type PositionMap = Map[Position, Int]
 
-  val input: PositionMap =
-    Source.fromResource("Day09.txt")
-      .getLines()
+  def stringToPositionMap(stringIterator: Iterator[String]): PositionMap =
+    stringIterator
       .toList
       .map(_.toList.zipWithIndex)
       .zipWithIndex
       .flatMap { case (l, i) =>
         l.map { case (c, j) =>
-          (1+i, 1+j) -> s"$c".toInt
+          (1 + i, 1 + j) -> s"$c".toInt
         }
       }
       .toMap
+
+  val input: PositionMap =
+    stringToPositionMap(Source.fromResource("Day09.txt")
+      .getLines())
 
   def add(p1: Position, p2: Position): Position =
     (p1._1 + p2._1, p1._2 + p2._2)
