@@ -5,24 +5,21 @@ import cats.Order
 import spire.compat.*
 import spire.implicits.*
 import spire.syntax.additiveMonoid.*
+import util.Measure
 
 import scala.annotation.tailrec
 
 case class WeightedGraph[A](
-    edges: Set[WeightedEdge[A]]
+    adjacency: Map[A, Map[A, Int]]
 )
 
 object WeightedGraph {
 
   def verticesOf[A](graph: WeightedGraph[A]): Set[A] =
-    graph.edges
-      .flatMap(e => Set(e.from, e.to))
+    graph.adjacency.keySet
 
   def successorsOf[A](graph: WeightedGraph[A])(node: A): Set[A] =
-    graph.edges
-      .collect {
-        case WeightedEdge(from, to, _) if from == node => to
-      }
+    graph.adjacency.get(node).fold(Set.empty[A])(_.keySet)
 
   case class WeightedPath[A](
       vertices: Vector[A],
@@ -30,11 +27,11 @@ object WeightedGraph {
   )
 
   def weightOf[A](weightedGraph: WeightedGraph[A])(from: A, to: A): Tropical[Int] =
-    weightedGraph.edges
-      .collectFirst { case e if e.from == from && e.to == to => Tropical.Number(e.weight) }
-      .getOrElse(Tropical.Infinity)
+    weightedGraph.adjacency.get(from).flatMap { ws =>
+      ws.get(to)
+    }.fold(Tropical.Infinity: Tropical[Int])(Tropical.Number(_))
 
-  def dijkstra[A](weightedGraph: WeightedGraph[A])(source: A, target: A): Map[A, Tropical[Int]] =
+  def dijkstra[A: Order](weightedGraph: WeightedGraph[A])(source: A, target: A): Map[A, Tropical[Int]] =
 
     @tailrec
     def processNext(
@@ -54,23 +51,20 @@ object WeightedGraph {
           val remainingQueue = queue - smallestVertex
           val neighbours = successorsOf(weightedGraph)(smallestVertex).intersect(remainingQueue)
           val (updatedDistances, updatedPredecessors) =
-            neighbours.foldLeft((distances, predecessors)) {
-              case ((ds, ps), n) =>
-                val weightToN = smallestWeight + weightOf(weightedGraph)(smallestVertex, n)
-                if weightToN < ds(n) then
-                  (ds.updated(n, weightToN), ps.updated(n, smallestVertex))
-                else
-                  (ds, ps)
+            neighbours.foldLeft(List.empty[(A, Tropical[Int])], Vector.empty[(A, A)]) { case ((ds, ps), n) =>
+              val weightToN = smallestWeight + weightOf(weightedGraph)(smallestVertex, n)
+              if weightToN < distances(n) then
+                ((n -> weightToN) +: ds, (n -> smallestVertex) +: ps)
+              else (ds, ps)
             }
-          processNext(remainingQueue, updatedDistances, updatedPredecessors)
+
+          processNext(remainingQueue, distances ++ updatedDistances.toMap, predecessors ++ updatedPredecessors.toMap)
 
     val vertices = verticesOf(weightedGraph)
 
     val iterated = processNext(
       vertices,
-      vertices.map(_ -> Tropical.Infinity)
-        .toMap
-        .updated(source, Tropical.Number(0)),
+      Map(source -> Tropical.Number(0)).withDefault(_ => Tropical.Infinity),
       Map.empty
     )
 
