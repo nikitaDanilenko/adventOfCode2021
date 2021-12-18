@@ -28,9 +28,10 @@ object Day17 {
     (newPosition, newVelocity)
 
   def search(xMin: Int, xMax: Int, yMin: Int, yMax: Int): Seq[Fitting] =
+    val yAdjusted = 2 * yMin.abs
     val velocities = for {
       x <- 1.to(200)
-      y <- 0.to(2 * yMin.abs)
+      y <- (-yAdjusted).to(yAdjusted)
     } yield Velocity(x, y)
 
     def checkTrajectory(velocity: Velocity) =
@@ -57,4 +58,9 @@ object Day17 {
     val y = search(153, 199, -114, -75)
     val maxY = y.maxBy(_.maxYPosition.y)
     pprint.log(maxY)
+
+  @main
+  def solution2: Unit =
+    val result = search(153, 199, -114, -75).size
+    pprint.log(result)
 }
