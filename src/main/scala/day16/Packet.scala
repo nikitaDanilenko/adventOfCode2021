@@ -80,7 +80,6 @@ object Packet {
           case Bit.O =>
 
             def repeat(remainingLength: Int): Parser0[List[Packet]] =
-              pprint.log(remainingLength)
               if remainingLength > 0 then
                 for {
                   packet <- packetParser.filter(_.length <= remainingLength)
@@ -105,6 +104,5 @@ object Packet {
   }
 
   lazy val packetParser: Parser0[Packet] = literalParser.backtrack.orElse(collectionParser)
-
 
 }
