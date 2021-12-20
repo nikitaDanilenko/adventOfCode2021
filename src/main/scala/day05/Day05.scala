@@ -3,11 +3,20 @@ package day05
 import cats.parse.Parser
 import cats.parse.Rfc5234.digit
 import spire.math.Natural
-import monocle.syntax.all._
+import monocle.syntax.all.*
+import spire.algebra.AdditiveMonoid
 
 import scala.io.Source
 
 case class Position(x: Int, y: Int)
+
+object Position {
+  implicit val positionAdditiveMonoid: AdditiveMonoid[Position] = new AdditiveMonoid[Position] {
+    override val zero: Position = Position(0, 0)
+    override def plus(p1: Position, p2: Position): Position =
+      Position(p1.x + p2.x, p1.y + p2.y)
+  }
+}
 
 case class Line(from: Position, to: Position)
 
