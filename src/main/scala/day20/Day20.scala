@@ -55,4 +55,14 @@ object Day20 {
     lit
   }
 
+  @main
+  def solution2: Int = {
+    val iterated = List.iterate(pixelMap, 26)(PixelMap.extendTwiceWith(key, _)).last
+    val lit = iterated.pixels.values.collect {
+      case Pixel.Light => ()
+    }.size
+    pprint.log(lit)
+    lit
+  }
+
 }
