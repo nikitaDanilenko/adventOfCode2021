@@ -50,7 +50,7 @@ object PixelMap {
     def extendOnce(pixelMap: PixelMap, offset: Int): PixelMap =
       val extendedFrom = pixelMap.dimensionFrom - offset
       val extendedTo = pixelMap.dimensionTo + offset
-      val range = extendedFrom.until(extendedTo)
+      val range = extendedFrom.to(extendedTo)
       val collection = for {
         x <- range
         y <- range
@@ -64,8 +64,8 @@ object PixelMap {
         pixels = collection.toMap.withDefaultValue(first)
       ) {}
 
-    // Why is 2 twice correct?
-    val extendedTwice = extendOnce(extendOnce(pixelMap, 2), 2)
+    // +1 possible in every odd iteration, +2 in every even one?
+    val extendedTwice = extendOnce(extendOnce(pixelMap, 1), 2)
     first match {
       case Pixel.Light =>
         new PixelMap(
