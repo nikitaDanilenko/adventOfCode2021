@@ -1,5 +1,6 @@
 package day18
 
+import cats.data.NonEmptyList
 import cats.parse.Parser
 import cats.parse.Rfc5234.*
 
@@ -134,16 +135,7 @@ object SnailNumber {
     case Complex(left, right) =>
       3 * magnitude(left) + 2 * magnitude(right)
 
-  def main(args: Array[String]): Unit = {
-    val sn1 = "[[[[4,3],4],4],[7,[[8,4],9]]]"
-    val sn2 = "[1,1]"
-
-    val result = for {
-      n1 <- snailNumberParser.parse(sn1)
-      n2 <- snailNumberParser.parse(sn2)
-    } yield add(n1._2, n2._2)
-
-    pprint.log(result)
-  }
+  def sum(nonEmptyList: NonEmptyList[SnailNumber]): SnailNumber =
+    nonEmptyList.tail.foldLeft(nonEmptyList.head)(add)
 
 }
