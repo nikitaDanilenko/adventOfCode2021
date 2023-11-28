@@ -74,6 +74,26 @@ object Day21 {
     val losing = last._2.player1.score.min(last._2.player2.score)
     Result(3 * iterations, losing)
 
+  case class Wins(
+      player1: BigInt,
+      player2: BigInt
+  )
+
+  type StateMap = Map[PlayerScoresWithTurn, Wins]
+
+  case class PlayerScoresWithTurn(
+      playerScores: PlayerScores,
+      first: Boolean
+  )
+
+  object PlayerScoresWithTurn {
+
+    def scoreReached(score: Int, playerScoresWithTurn: PlayerScoresWithTurn): Boolean =
+      playerScoresWithTurn.playerScores.player1.score >= score ||
+        playerScoresWithTurn.playerScores.player2.score >= score
+
+  }
+
   // Largely based upon https://todd.ginsberg.com/post/advent-of-code/2021/day21/
   def quantum: (StateMap, Wins) = {
     val frequencyMap =
@@ -86,25 +106,6 @@ object Day21 {
         8 -> BigInt(3),
         9 -> BigInt(1)
       )
-
-    case class PlayerScoresWithTurn(
-        playerScores: PlayerScores,
-        first: Boolean
-    )
-
-    object PlayerScoresWithTurn {
-      def scoreReached(score: Int, playerScoresWithTurn: PlayerScoresWithTurn): Boolean =
-        playerScoresWithTurn.playerScores.player1.score >= score ||
-          playerScoresWithTurn.playerScores.player2.score >= score
-
-    }
-
-    case class Wins(
-        player1: BigInt,
-        player2: BigInt
-    )
-
-    type StateMap = Map[PlayerScoresWithTurn, Wins]
 
     def iterate(scores: PlayerScoresWithTurn): State[StateMap, Wins] =
       if (PlayerScoresWithTurn.scoreReached(21, scores))
@@ -179,7 +180,7 @@ object Day21 {
 
   @main
   def solution2(): Unit =
-    val wins = quantum()
+    val wins = quantum
     pprint.log(wins._2)
 
 }
