@@ -22,6 +22,10 @@ object Register {
 
 }
 
+val intParser = day05.nonNegativeIntParser.orElse(
+  Parser.char('-') *> day05.nonNegativeIntParser.map(-_)
+)
+
 sealed trait Operand
 
 object Operand {
@@ -33,7 +37,7 @@ object Operand {
       .map(RegisterReference.apply)
       .backtrack
       .orElse(
-        day05.nonNegativeIntParser.map(Value.apply)
+        intParser.map(Value.apply)
       )
 
 }
@@ -70,12 +74,71 @@ object Instruction {
 
 }
 
-val input = Source
-  .fromResource("day24test.txt")
+lazy val input = Source
+  .fromResource("day24.txt")
   .getLines()
   .flatMap(Instruction.parser.parseAll(_).toOption)
   .toList
 
+def valueOf(operand: Operand, registers: Map[Register, Int]): Int =
+  operand match
+    case Operand.RegisterReference(register) => registers(register)
+    case Operand.Value(int)                  => int
+
+case class State(
+    registers: Map[Register, Int],
+    numbers: List[Int]
+)
+
+object State {
+
+  val initialRegisters: Map[Register, Int] = Map(
+    Register.W -> 0,
+    Register.X -> 0,
+    Register.Y -> 0,
+    Register.Z -> 0
+  )
+
+}
+
+def interpret(
+    instruction: Instruction,
+    state: State
+): State =
+  val updatedNumbers = instruction match
+    case Instruction.Inp(_) => state.numbers.tail
+    case _                  => state.numbers
+
+  val updatedRegisters =
+    instruction match
+      case Instruction.Inp(register) =>
+        state.registers.updated(register, state.numbers.head)
+      case Instruction.Add(register, operand) =>
+        val value = valueOf(operand, state.registers)
+        state.registers.updated(register, state.registers(register) + value)
+      case Instruction.Mul(register, operand) =>
+        val value = valueOf(operand, state.registers)
+        state.registers.updated(register, state.registers(register) * value)
+      case Instruction.Div(register, operand) =>
+        val value = valueOf(operand, state.registers)
+        state.registers.updated(register, state.registers(register) / value)
+      case Instruction.Mod(register, operand) =>
+        val value = valueOf(operand, state.registers)
+        state.registers.updated(register, state.registers(register) % value)
+      case Instruction.Eql(register, operand) =>
+        val value = valueOf(operand, state.registers)
+        state.registers.updated(register, if state.registers(register) == value then 1 else 0)
+
+  State(
+    updatedRegisters,
+    updatedNumbers
+  )
+
+def interpretAll(instructions: List[Instruction], numbers: List[Int]): State =
+  instructions.foldLeft(State(State.initialRegisters, numbers)) { (state, instruction) =>
+    interpret(instruction, state)
+  }
+
 @main
 def solution1: Unit =
-  pprint.pprintln(input)
+  println(input)
