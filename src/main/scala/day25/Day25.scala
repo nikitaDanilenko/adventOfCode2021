@@ -113,7 +113,7 @@ object Day25 {
       .toList
       .head
       .head
-      ._2 + 1
+      ._2 + 1 // + 1 because of the "sliding(2)", which means that one step is missing
 
   @main
   def solution1(): Unit =
