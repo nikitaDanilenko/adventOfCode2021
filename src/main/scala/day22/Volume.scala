@@ -1,6 +1,7 @@
 package day22
 
-import cats.parse.{ Parser, Parser0 }
+import cats.parse.{Parser, Parser0}
+import util.Point3D
 
 sealed trait Volume {
   def contains(point3D: Point3D): Boolean

@@ -2,6 +2,7 @@ package day22
 
 import cats.parse.{Parser, Parser0}
 import day22.Volume.Cuboid
+import util.Point3D
 
 import scala.io.Source
 
