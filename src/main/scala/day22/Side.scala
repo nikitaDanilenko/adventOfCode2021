@@ -13,7 +13,6 @@ case class Side(
 )
 
 object Side {
-  def on(side: Side, t: Int): Boolean = side.from <= t && t <= side.to
 
   val signParser: Parser0[Int] =
     Parser
@@ -36,5 +35,18 @@ object Side {
     from = xSign * x,
     to = ySign * y
   )
+
+  def intersection(side1: Side, side2: Side): Option[Side] =
+    val candidate = Side(
+      from = side1.from.max(side2.from),
+      to = side1.to.min(side2.to)
+    )
+    Some(candidate).filter(s => s.from <= s.to)
+
+  def length(side: Side): BigInt =
+    if (side.from <= side.to)
+      BigInt(side.to - side.from + 1)
+    else
+      BigInt(0)
 
 }
