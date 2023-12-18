@@ -2,6 +2,7 @@ package day19
 
 import util.Point3D
 
+import scala.annotation.tailrec
 import scala.io.Source
 import scala.util.chaining.*
 
@@ -9,10 +10,11 @@ object Day19 {
 
   case class Scanner(
       number: Int,
-      points: Set[Point3D]
+      points: Set[Point3D],
+      transformation: Point3D => Point3D
   )
 
-  def distance(point1: Point3D, point2: Point3D): BigInt =
+  private def distance(point1: Point3D, point2: Point3D): BigInt =
     List(
       point1.x - point2.x,
       point1.y - point2.y,
@@ -21,7 +23,7 @@ object Day19 {
       .map(_.pipe(spire.math.abs).pipe(spire.math.pow(_, 2)))
       .sum
 
-  def distancesInScanner(scanner: Scanner): Map[(Point3D, Point3D), BigInt] = {
+  private def distancesInScanner(scanner: Scanner): Map[(Point3D, Point3D), BigInt] = {
     val collection = for {
       point1 <- scanner.points
       point2 <- scanner.points - point1
@@ -30,43 +32,28 @@ object Day19 {
     collection.toMap
   }
 
-  case class Overlap(
+  private case class Overlap(
       scanner1: Scanner,
       scanner2: Scanner
   )
 
-  def overlappingScanners(scanners: List[Scanner]): List[Overlap] = {
-    val collection = for {
-      (scanner1, index) <- scanners.zipWithIndex
-      scanner2 <- scanners.drop(1 + index)
-    } yield {
-      val distancesInScanner1 = distancesInScanner(scanner1)
-      val distancesInScanner2 = distancesInScanner(scanner2)
-      val distances1 = distancesInScanner1.values.toSet
-      val distances2 = distancesInScanner2.values.toSet
-      // 66 = 12 * 11 / 2, which is the number of pairwise combinations of 12 points
-      if (distances1.intersect(distances2).size >= 66) {
-        Some(
-          Overlap(
-            scanner1 = scanner1,
-            scanner2 = scanner2
-          )
-        )
-      } else None
-    }
-
-    collection.flatten
-  }
+  private def hasOverlap(scanner1: Scanner, scanner2: Scanner): Boolean =
+    val distancesInScanner1 = distancesInScanner(scanner1)
+    val distancesInScanner2 = distancesInScanner(scanner2)
+    val distances1 = distancesInScanner1.values.toSet
+    val distances2 = distancesInScanner2.values.toSet
+    // 66 = 12 * 11 / 2, which is the number of pairwise combinations of 12 points
+    distances1.intersect(distances2).size >= 66
 
   enum Direction:
     case X, Y, Z
 
-  case class Rotation(
+  private case class Rotation(
       direction: Direction,
       numberOfRotations: Int
   )
 
-  case class Difference(
+  private case class Difference(
       rotations: List[Rotation],
       offset: Point3D
   )
@@ -91,7 +78,7 @@ object Day19 {
       .getOrElse(point)
 
   // Computed via brute forcing all possible rotations, and only taking the distinct results.
-  val allRotations: List[List[Rotation]] = List(
+  private val allRotations: List[List[Rotation]] = List(
     List(
       Rotation(direction = Direction.Y, numberOfRotations = 2)
     ),
@@ -184,7 +171,7 @@ object Day19 {
     )
   )
 
-  def rotateAll(
+  private def rotateAll(
       point: Point3D,
       rotations: List[Rotation]
   ): Point3D =
@@ -192,9 +179,9 @@ object Day19 {
       rotateViaRotation(point, rotation)
     }
 
-  private def alignOverlapping(
+  private def findDifference(
       overlap: Overlap
-  ): Difference = {
+  ): Option[Difference] = {
     val collection = overlap.scanner1.points
       .flatMap(first1 =>
         overlap.scanner2.points
@@ -213,11 +200,55 @@ object Day19 {
             }.toSet
           )
       )
-    collection.head
+    collection.headOption
+  }
+
+  private def alignOverlapping2(
+      scanners: List[Scanner]
+  ): List[Scanner] = {
+
+    case class Alignment(
+        aligned: List[Scanner],
+        nextToBeAligned: List[Scanner],
+        notAligned: List[Scanner]
+    )
+
+    /*
+     * Largely based on a description on Reddit.
+     * 1. Identify scanners by unique p2 distances
+     * 2. Find matching rotation, and translation for each overlapping scanner
+     * 3. Rotate and translate all scanners to the same coordinate system
+     * */
+
+    @tailrec
+    def iterate(alignment: Alignment): Alignment =
+      alignment.nextToBeAligned match
+        case Nil => alignment
+        case next :: remainingToBeAligned =>
+          val overlapping = alignment.notAligned.filter(hasOverlap(next, _))
+          val differences =
+            overlapping.flatMap(candidate => findDifference(Overlap(candidate, next)).map(candidate -> _))
+          val newNotAligned =
+            alignment.notAligned.filterNot(scanner => differences.exists(_._1.number == scanner.number))
+          val newToBeAligned = remainingToBeAligned ++ differences.map { case (scanner, difference) =>
+            scanner.copy(
+              points = scanner.points.map(p => Point3D.plus(difference.offset, rotateAll(p, difference.rotations))),
+              transformation =
+                p => Point3D.plus(difference.offset, rotateAll(scanner.transformation(p), difference.rotations))
+            )
+          }
+          val nextAlignment = Alignment(
+            aligned = next +: alignment.aligned,
+            nextToBeAligned = newToBeAligned,
+            notAligned = newNotAligned
+          )
+          iterate(nextAlignment)
+
+    iterate(Alignment(List.empty, scanners.take(1), scanners.tail)).aligned
   }
 
   val input: List[Scanner] = Source
-    .fromResource("day19test.txt")
+    .fromResource("day19.txt")
     .getLines()
     .mkString("\n")
     .split("\n\n")
@@ -233,19 +264,21 @@ object Day19 {
             case _                  => None
           }
         }
-      Scanner(index, positions.toSet)
+      Scanner(index, positions.toSet, transformation = identity)
     }
     .toList
 
   @main
-  def solution1(): Unit =
-    val overlaps = overlappingScanners(input)
-    val points = overlaps.flatMap { overlap =>
-      val difference = alignOverlapping(overlap)
-      overlap.scanner1.points.map { point =>
-        Point3D.plus(rotateAll(point, difference.rotations), difference.offset)
-      }
-    }.toSet
-    println(points.size)
+  def solutions(): Unit =
+    val transformedScanners = alignOverlapping2(input)
+    val overlaps = transformedScanners.toSet.flatMap(_.points).toList
+    println(s"Solution 1: ${overlaps.size}")
+    val scannerPositions = transformedScanners.map(_.transformation(Point3D(0, 0, 0)))
+    val pairwiseDistances = for {
+      point <- scannerPositions
+      otherPoint <- scannerPositions
+    } yield Point3D.manhattanDistance(point, otherPoint)
+    val maximum = pairwiseDistances.max
+    println(s"Solution 2: $maximum")
 
 }

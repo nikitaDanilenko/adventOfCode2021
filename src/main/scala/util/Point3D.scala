@@ -20,4 +20,13 @@ object Point3D {
     z = point1.z + point2.z
   )
 
+  def manhattanDistance(point1: Point3D, point2: Point3D): Int =
+    List(
+      point1.x - point2.x,
+      point1.y - point2.y,
+      point1.z - point2.z
+    )
+      .map(Math.abs)
+      .sum
+
 }
